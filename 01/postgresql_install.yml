@@ -1,0 +1,75 @@
+---
+- name: Install and configure PostgreSQL on Ubuntu Servers
+  hosts:
+    - psql-op-1-ubuntu-1
+    - psql-op-1-ubuntu-2
+  become: true
+  vars:
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
+    postgres_password: 1
+  tasks:
+    - name: Update apt repository
+      apt:
+        update_cache: yes
+
+    - name: Install curl and ca-certificates (required for adding repo)
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+
+    - name: Create the directory for PostgreSQL key if it doesn't exist
+      file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+      when: inventory_hostname == "psql-op-1-ubuntu-2"
+
+    - name: Add PostgreSQL repository key for PostgreSQL 17
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+      when: inventory_hostname == "psql-op-1-ubuntu-2"
+
+    - name: Add PostgreSQL 17 repository
+      shell: |
+        echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+      when: inventory_hostname == "psql-op-1-ubuntu-2"
+
+    - name: Update apt after adding the PostgreSQL 17 repository
+      apt:
+        update_cache: yes
+      when: inventory_hostname == "psql-op-1-ubuntu-2"
+
+    - name: Install PostgreSQL 16 on psql-op-1-ubuntu-1
+      apt:
+        name: postgresql-16
+        state: present
+      when: inventory_hostname == "psql-op-1-ubuntu-1"
+
+    - name: Install PostgreSQL 17 on psql-op-1-ubuntu-2
+      apt:
+        name: postgresql-17
+        state: present
+      when: inventory_hostname == "psql-op-1-ubuntu-2"
+
+    - name: Install postgresql-client to access pg_isready
+      apt:
+        name: postgresql-client
+        state: present
+
+    - name: Check PostgreSQL availability
+      command: pg_isready -q
+      register: result
+      failed_when: result.rc != 0
+
+    - name: Output PostgreSQL availability
+      debug:
+        msg: "PostgreSQL is ready."
+
+    - name: Set password for postgres user
+      community.postgresql.postgresql_user:
+        name: postgres
+        password: "{{ postgres_password }}"
+        state: present
+
