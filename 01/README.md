@@ -5,14 +5,7 @@
     Убедитесь, что задание выполнено корректно, и отправьте его на проверку.
 
 
-# Нужно создать ansible playbook на основании моих BASH скриптов
-psql-op-1-ubuntu-1
-    server ip: 192.168.1.2
-    port: 5432
-psql-op-1-ubuntu-2
-    server ip: 192.168.1.3
-    port: 5433
-
+## Задача: Нужно создать ansible playbook на основании BASH скриптов
 
 ## скрипт для psql-op-1-ubuntu-1
 
